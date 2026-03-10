@@ -20,4 +20,14 @@ test.describe("Group of tests", () => {
       page.getByRole("heading", { name: "Installation" }),
     ).toBeVisible();
   });
+  test("Successful sign in", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("#signinEmail").fill("fedorenkos084+test1@gmail.com");
+    await page.locator("#signinPassword").fill("12345Test1");
+    await page.getByRole("button", { name: "Login" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Garage" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveScreenshot("garage");
+  });
 });
