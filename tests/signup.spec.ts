@@ -1,298 +1,217 @@
 import { test, expect } from "@playwright/test";
+import { RegistrationPage } from "../pom/RegistrationPage";
 
 test.describe("Sign up form", () => {
+  let registrationPage: RegistrationPage;
+
   const timestamp = Date.now();
   const testEmail = `aqa-fedorenko${timestamp}@gmail.com`;
+  const errorBorderColor = "rgb(220, 53, 69)";
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await page.locator(".hero-descriptor_btn").click();
+    registrationPage = new RegistrationPage(page);
+    await page.getByRole("button", { name: "Sign up" }).click();
   });
 
-  test.describe("Registration Form", () => {
-    //Test1 Successful Registration
-    test("Success Registration", async ({ page }) => {
-      await page.locator("#signupName").fill("Serhii");
-      await page.locator("#signupLastName").fill("Fedorenko");
-      await page.locator("#signupEmail").fill(testEmail);
-      await page.locator("#signupPassword").fill("Qwer12345");
-      await page.locator("#signupRepeatPassword").fill("Qwer12345");
-      await page.getByRole("button", { name: "Register" }).click();
-      await expect(
-        page.getByRole("heading", { name: "Garage" }).first(),
-      ).toBeVisible({ timeout: 10000 });
+  // SUCCESSFUL REGISTRATION
+
+  test("Successful registration", async () => {
+    await registrationPage.fillRegistrationForm({
+      name: "Serhiy",
+      lastName: "Fedorenko",
+      email: testEmail,
+      pass: "Password123",
+      repeatPass: "Password123",
     });
-    test.describe("Field Name", () => {
-      //Test2 - Empty field - "Name required"
 
-      test("Empty field validation", async ({ page }) => {
-        const nameInput = page.locator("#signupName");
-        await nameInput.focus();
-        await nameInput.blur();
-        const errorMessage = page.locator(".invalid-feedback");
-        await expect(errorMessage).toHaveText("Name required");
-        await expect(errorMessage).toHaveCSS(
-          "border-color",
-          "rgb(220, 53, 69)",
-        );
-      });
-      //Test3 - Name is invalid
-      test("Name is invalid", async ({ page }) => {
-        const nameInput = page.locator("#signupName");
-        await nameInput.fill(" S ");
-        await nameInput.blur();
-        const error = page.locator("#signupName ~ .invalid-feedback");
-        await expect(error).toHaveText("Name is invalid");
-      });
-      //Test4 - Wrong length - "Name has to be from 2 to 20 characters long. The field name can ba any English symbol min=2 max=20. Need to ignore space and please use function trim"
-      test("Wrong length (min)", async ({ page }) => {
-        const nameInput = page.locator("#signupName");
-        await nameInput.fill("S");
-        await nameInput.blur();
-        await expect(
-          page.locator("#signupName ~ .invalid-feedback"),
-        ).toHaveText("Name has to be from 2 to 20 characters long");
-      });
-      test("Wrong length (max)", async ({ page }) => {
-        const nameInput = page.locator("#signupName");
-        const longName = "A".repeat(21);
-        await nameInput.fill(longName);
-        await nameInput.blur();
-        await expect(
-          page.locator("#signupName ~ .invalid-feedback"),
-        ).toHaveText("Name has to be from 2 to 20 characters long");
-      });
-      //Test5 - Border color red
-      test("Border color red", async ({ page }) => {
-        const nameInput = page.locator("#signupName");
-        await nameInput.focus();
-        await nameInput.blur();
-        await expect(nameInput).toHaveCSS("border-color", "rgb(220, 53, 69)");
-      });
+    await registrationPage.registerButton.click();
+
+    await expect(registrationPage.garageHeading).toBeVisible();
+  });
+
+  // REGISTER BUTTON DISABLED
+
+  test("Register button should be disabled with empty form", async () => {
+    await expect(registrationPage.registerButton).toBeDisabled();
+  });
+
+  // NAME
+
+  test("Name required", async () => {
+    await registrationPage.triggerValidationError(registrationPage.signupName);
+    await expect(registrationPage.getNameError()).toHaveText("Name required");
+  });
+
+  test("Name too short", async () => {
+    await registrationPage.signupName.fill("A");
+    await registrationPage.signupName.blur();
+    await expect(registrationPage.getNameError()).toHaveText(
+      "Name has to be from 2 to 20 characters long",
+    );
+  });
+
+  test("Name too long", async () => {
+    const longName = "A".repeat(21);
+    await registrationPage.signupName.fill(longName);
+    await registrationPage.signupName.blur();
+    await expect(registrationPage.getNameError()).toHaveText(
+      "Name has to be from 2 to 20 characters long",
+    );
+  });
+
+  test("Name invalid characters", async () => {
+    await registrationPage.signupName.fill("1234");
+    await registrationPage.signupName.blur();
+    await expect(registrationPage.getNameError()).toHaveText("Name is invalid");
+  });
+
+  test("Name border red when invalid", async () => {
+    await registrationPage.signupName.fill("A");
+    await registrationPage.signupName.blur();
+    await expect(registrationPage.signupName).toHaveCSS(
+      "border-color",
+      errorBorderColor,
+    );
+  });
+
+  // LAST NAME
+
+  test("Last name required", async () => {
+    await registrationPage.triggerValidationError(
+      registrationPage.signupLastName,
+    );
+    await expect(registrationPage.getLastNameError()).toHaveText(
+      "Last name required",
+    );
+  });
+
+  test("Last name too short", async () => {
+    await registrationPage.signupLastName.fill("A");
+    await registrationPage.signupLastName.blur();
+    await expect(registrationPage.getLastNameError()).toHaveText(
+      "Last name has to be from 2 to 20 characters long",
+    );
+  });
+
+  test("Last name too long", async () => {
+    const longName = "A".repeat(21);
+    await registrationPage.signupLastName.fill(longName);
+    await registrationPage.signupLastName.blur();
+    await expect(registrationPage.getLastNameError()).toHaveText(
+      "Last name has to be from 2 to 20 characters long",
+    );
+  });
+
+  test("Last name invalid characters", async () => {
+    await registrationPage.signupLastName.fill("1234");
+    await registrationPage.signupLastName.blur();
+    await expect(registrationPage.getLastNameError()).toHaveText(
+      "Last name is invalid",
+    );
+  });
+
+  test("Last name border red when invalid", async () => {
+    await registrationPage.signupLastName.fill("A");
+    await registrationPage.signupLastName.blur();
+    await expect(registrationPage.signupLastName).toHaveCSS(
+      "border-color",
+      errorBorderColor,
+    );
+  });
+
+  // EMAIL
+
+  test("Email required", async () => {
+    await registrationPage.triggerValidationError(registrationPage.signupEmail);
+    await expect(registrationPage.getEmailError()).toHaveText("Email required");
+  });
+
+  test("Email incorrect format", async () => {
+    await registrationPage.signupEmail.fill("test");
+    await registrationPage.signupEmail.blur();
+    await expect(registrationPage.getEmailError()).toHaveText(
+      "Email is incorrect",
+    );
+  });
+
+  test("Email border red when invalid", async () => {
+    await registrationPage.signupEmail.fill("test");
+    await registrationPage.signupEmail.blur();
+    await expect(registrationPage.signupEmail).toHaveCSS(
+      "border-color",
+      errorBorderColor,
+    );
+  });
+
+  // PASSWORD
+
+  test("Password required", async () => {
+    await registrationPage.triggerValidationError(
+      registrationPage.signupPassword,
+    );
+    await expect(registrationPage.getPasswordError()).toHaveText(
+      "Password required",
+    );
+  });
+
+  test("Password too short", async () => {
+    await registrationPage.signupPassword.fill("123");
+    await registrationPage.signupPassword.blur();
+    await expect(registrationPage.getPasswordError()).toHaveText(
+      "Password has to be from 8 to 15 characters long and contain at least one integer, one capital, and one small letter",
+    );
+  });
+
+  test("Password border red when invalid", async () => {
+    await registrationPage.signupPassword.fill("123");
+    await registrationPage.signupPassword.blur();
+    await expect(registrationPage.signupPassword).toHaveCSS(
+      "border-color",
+      errorBorderColor,
+    );
+  });
+
+  // REPEAT PASSWORD
+
+  test("Repeat password required", async () => {
+    await registrationPage.triggerValidationError(
+      registrationPage.signupRepeatPassword,
+    );
+    await expect(registrationPage.getRepeatPasswordError()).toHaveText(
+      "Re-enter password required",
+    );
+  });
+
+  test("Repeat password mismatch", async () => {
+    await registrationPage.signupPassword.fill("Password123");
+    await registrationPage.signupRepeatPassword.fill("Password321");
+    await registrationPage.signupRepeatPassword.blur();
+    await expect(registrationPage.getRepeatPasswordError()).toHaveText(
+      "Passwords do not match",
+    );
+  });
+
+  test("Repeat password border red when invalid", async () => {
+    await registrationPage.signupRepeatPassword.fill("123");
+    await registrationPage.signupRepeatPassword.blur();
+    await expect(registrationPage.signupRepeatPassword).toHaveCSS(
+      "border-color",
+      errorBorderColor,
+    );
+  });
+
+  // REGISTER BUTTON ENABLED
+
+  test("Register button should be enabled with valid data", async () => {
+    await registrationPage.fillRegistrationForm({
+      name: "Serhiy",
+      lastName: "Fedorenko",
+      email: `aqa-fedorenko${Date.now()}@gmail.com`,
+      pass: "Password123",
+      repeatPass: "Password123",
     });
-    test.describe("Field Last Name", () => {
-      //Test2 - Empty field - "Last Name is required"
-      test("Empty field Last Name", async ({ page }) => {
-        const lastNameInput = page.locator("#signupLastName");
-        await lastNameInput.focus();
-        await lastNameInput.blur();
 
-        await expect(
-          page.locator("#signupLastName ~ .invalid-feedback"),
-        ).toHaveText("Last name required");
-      });
-
-      //Test3 - Wrong data - "Last Name is invalid"
-      test("Last name is invalid", async ({ page }) => {
-        const lastNameInput = page.locator("#signupLastName");
-        await lastNameInput.fill(" S ");
-        await lastNameInput.blur();
-
-        await expect(
-          page.locator("#signupLastName ~ .invalid-feedback"),
-        ).toHaveText("Last name is invalid");
-      });
-
-      //Test4 - Wrong length
-      test("LastName Wrong length (min)", async ({ page }) => {
-        const lastNameInput = page.locator("#signupLastName");
-        await lastNameInput.fill("F");
-        await lastNameInput.blur();
-
-        await expect(
-          page.locator("#signupLastName ~ .invalid-feedback"),
-        ).toHaveText("Last name has to be from 2 to 20 characters long");
-      });
-
-      test("LastName Wrong length (max)", async ({ page }) => {
-        const lastNameInput = page.locator("#signupLastName");
-        const longLastName = "B".repeat(21);
-
-        await lastNameInput.fill(longLastName);
-        await lastNameInput.blur();
-
-        await expect(
-          page.locator("#signupLastName ~ .invalid-feedback"),
-        ).toHaveText("Last name has to be from 2 to 20 characters long");
-      });
-
-      //Test5 - Border color red
-      test("LastName Border color red", async ({ page }) => {
-        const lastNameInput = page.locator("#signupLastName");
-        await lastNameInput.focus();
-        await lastNameInput.blur();
-
-        await expect(lastNameInput).toHaveCSS(
-          "border-color",
-          "rgb(220, 53, 69)",
-        );
-      });
-    });
-    test.describe("Field Email", () => {
-      //Test1 - Empty field - "Email required"
-      test("Empty field Email", async ({ page }) => {
-        const emailInput = page.locator("#signupEmail");
-        await emailInput.focus();
-        await emailInput.blur();
-
-        await expect(
-          page.locator("#signupEmail ~ .invalid-feedback"),
-        ).toHaveText("Email required");
-      });
-
-      //Test2 - Wrong data - "Email is incorrect"
-      test("Email is incorrect", async ({ page }) => {
-        const emailInput = page.locator("#signupEmail");
-        await emailInput.fill("serg@gmail");
-        await emailInput.blur();
-
-        await expect(
-          page.locator("#signupEmail ~ .invalid-feedback"),
-        ).toHaveText("Email is incorrect");
-      });
-
-      //Test3 - Border color red
-      test("Email Border color red", async ({ page }) => {
-        const emailInput = page.locator("#signupEmail");
-        await emailInput.focus();
-        await emailInput.blur();
-
-        await expect(emailInput).toHaveCSS("border-color", "rgb(220, 53, 69)");
-      });
-    });
-    test.describe("Field Password", () => {
-      const passwordErrorText =
-        "Password has to be from 8 to 15 characters long and contain at least one integer, one capital, and one small letter";
-
-      //Test1 - Empty field - "Password required"
-      test("Password required", async ({ page }) => {
-        const passwordInput = page.locator("#signupPassword");
-        await passwordInput.focus();
-        await passwordInput.blur();
-
-        await expect(
-          page.locator("#signupPassword ~ .invalid-feedback"),
-        ).toHaveText("Password required");
-      });
-
-      //Test3 - Wrong data (Validation messages)
-      test("Password is shorter than 8 characters", async ({ page }) => {
-        await page.locator("#signupPassword").fill("Aa1");
-        await page.locator("#signupPassword").blur();
-
-        await expect(
-          page.locator("#signupPassword ~ .invalid-feedback"),
-        ).toHaveText(passwordErrorText);
-      });
-
-      test("Password is longer than 15 characters", async ({ page }) => {
-        const longPass = "Aa1" + "a".repeat(13); // 16 символів
-        await page.locator("#signupPassword").fill(longPass);
-        await page.locator("#signupPassword").blur();
-
-        await expect(
-          page.locator("#signupPassword ~ .invalid-feedback"),
-        ).toHaveText(passwordErrorText);
-      });
-
-      test("Password has no integer", async ({ page }) => {
-        await page.locator("#signupPassword").fill("PasswordA");
-        await page.locator("#signupPassword").blur();
-
-        await expect(
-          page.locator("#signupPassword ~ .invalid-feedback"),
-        ).toHaveText(passwordErrorText);
-      });
-
-      test("Password has no capital letter", async ({ page }) => {
-        await page.locator("#signupPassword").fill("password1");
-        await page.locator("#signupPassword").blur();
-
-        await expect(
-          page.locator("#signupPassword ~ .invalid-feedback"),
-        ).toHaveText(passwordErrorText);
-      });
-
-      test("Password has no small letter", async ({ page }) => {
-        await page.locator("#signupPassword").fill("PASSWORD1");
-        await page.locator("#signupPassword").blur();
-
-        await expect(
-          page.locator("#signupPassword ~ .invalid-feedback"),
-        ).toHaveText(passwordErrorText);
-      });
-
-      //Test4 - Border color red
-      test("Password Border color red", async ({ page }) => {
-        const passwordInput = page.locator("#signupPassword");
-        await passwordInput.focus();
-        await passwordInput.blur();
-
-        await expect(passwordInput).toHaveCSS(
-          "border-color",
-          "rgb(220, 53, 69)",
-        );
-      });
-    });
-    test.describe("Field Re-enter password", () => {
-      const passwordErrorText =
-        "Password has to be from 8 to 15 characters long and contain at least one integer, one capital, and one small letter";
-
-      //Test1 - Empty field - "Re-enter password required"
-      test("RepeatPassword Empty field", async ({ page }) => {
-        const repeatPasswordInput = page.locator("#signupRepeatPassword");
-        await repeatPasswordInput.focus();
-        await repeatPasswordInput.blur();
-
-        await expect(
-          page.locator("#signupRepeatPassword ~ .invalid-feedback"),
-        ).toHaveText("Re-enter password required");
-      });
-
-      //Test2 - Wrong data
-      test("Repeat password is shorter than 8 characters", async ({ page }) => {
-        const repeatPasswordInput = page.locator("#signupRepeatPassword");
-        await repeatPasswordInput.fill("Bb1");
-        await repeatPasswordInput.blur();
-
-        await expect(
-          page.locator("#signupRepeatPassword ~ .invalid-feedback"),
-        ).toHaveText(passwordErrorText);
-      });
-
-      //Test3 - Border color red
-      test("Repeat password Border color red", async ({ page }) => {
-        const repeatPasswordInput = page.locator("#signupRepeatPassword");
-        await repeatPasswordInput.focus();
-        await repeatPasswordInput.blur();
-
-        await expect(repeatPasswordInput).toHaveCSS(
-          "border-color",
-          "rgb(220, 53, 69)",
-        );
-      });
-    });
-    test.describe("Button Register", () => {
-      test("Register button should be enabled when form is valid", async ({
-        page,
-      }) => {
-        const uniqueEmail = `aqa-test${Date.now()}@gmail.com`;
-
-        await page.locator("#signupName").fill("Serg");
-        await page.locator("#signupLastName").fill("Fedorenko");
-        await page.locator("#signupEmail").fill(uniqueEmail);
-        await page.locator("#signupPassword").fill("Password1");
-        await page.locator("#signupRepeatPassword").fill("Password1");
-        const registerButton = page.getByRole("button", { name: "Register" });
-        await expect(registerButton).toBeEnabled();
-      });
-
-      test("Register button should be disabled when form is Empty", async ({
-        page,
-      }) => {
-        const registerButton = page.getByRole("button", { name: "Register" });
-        await expect(registerButton).toBeDisabled();
-      });
-    });
+    await expect(registrationPage.registerButton).toBeEnabled();
   });
 });
