@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
-require("dotenv").config({ path: ".env" });
+import path from "path";
+import dotenv from "dotenv";
+
+// Чітко вказуємо шлях до файлу .env
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -29,8 +33,8 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: process.env.BASE_URL,
     httpCredentials: {
-      username: process.env.AUTH_USERNAME!,
-      password: process.env.AUTH_PASSWORD!,
+      username: process.env.AUTH_USERNAME || "",
+      password: process.env.AUTH_PASSWORD || "",
     },
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
