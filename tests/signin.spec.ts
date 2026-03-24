@@ -1,62 +1,62 @@
 import test, { expect } from "@playwright/test";
-
+import HomePage from "../pom/pages/HomePage";
+import SignInForm from "../pom/forms/SignInForm";
+import { VALID_USER1 } from "../test-data/users";
+import { faker } from "@faker-js/faker";
+import { SignInValidationMessages } from "../test-data/messages";
+import ForgotPasswordForm from "../pom/forms/ForgotPasswordForm";
 test.describe("Sign in form", () => {
+  let homePage: HomePage;
+  let signInForm: SignInForm;
+  let forgotPasswordForm: ForgotPasswordForm;
   test.beforeEach(async ({ page }) => {
+    homePage = new HomePage(page);
+    signInForm = new SignInForm(page);
+    forgotPasswordForm = new ForgotPasswordForm(page);
+    signInForm = new SignInForm(page);
     await page.goto("/");
-    await page.locator(".header_signin").click();
+    await homePage.signInButton.click();
   });
 
   test.describe("SignIn Process", () => {
     //Successful sign in
     test("Successful sign in", async ({ page }) => {
-      await page.locator("#signinEmail").fill("fedorenkos084+test1@gmail.com");
-      await page.locator("#signinPassword").fill("12345Test1");
-      await page.getByRole("button", { name: "Login" }).click();
-      await expect(
-        page.getByRole("heading", { name: "Garage" }).first(),
-      ).toBeVisible();
+      await signInForm.login(VALID_USER1.email, VALID_USER1.password);
+      await expect(page.locator("h1")).toHaveText("Garage");
     });
     //Sign in with empty email
-    test("Sign in with empty email", async ({ page }) => {
-      await page.locator("#signinEmail").fill("");
-      await page.locator("#signinEmail").focus();
-      await page.locator("#signinEmail").blur();
-      await page.locator("#signinPassword").fill("12345Test");
-      await expect(page.getByRole("button", { name: "Login" })).toBeDisabled();
-      await expect(page.locator("div.invalid-feedback p")).toHaveText(
-        "Email required",
+    test("Sign in with empty email", async () => {
+      await signInForm.triggerValidationErrorOnField(signInForm.emailField);
+      await expect(signInForm.loginButton).toBeDisabled();
+      await expect(signInForm.validationError).toHaveText(
+        SignInValidationMessages.emptyEmail,
       );
-      await expect(page.locator("#signinEmail")).toHaveCSS(
+      await expect(signInForm.emailField).toHaveCSS(
         "border-color",
         "rgb(220, 53, 69)",
       );
     });
 
     //Sign in with empty password
-    test("Sign in with empty password", async ({ page }) => {
-      await page.locator("#signinEmail").fill("fedorenko084+test1@gmail.com");
-      await page.locator("#signinPassword").focus();
-      await page.locator("#signinPassword").blur();
-
-      await expect(page.getByRole("button", { name: "Login" })).toBeDisabled();
-      await expect(page.locator("div.invalid-feedback p")).toHaveText(
-        "Password required",
+    test("Sign in with empty password", async () => {
+      await signInForm.triggerValidationErrorOnField(signInForm.passwordField);
+      await expect(signInForm.loginButton).toBeDisabled();
+      await expect(signInForm.validationError).toHaveText(
+        SignInValidationMessages.emptyPassword,
       );
-      await expect(page.locator("#signinPassword")).toHaveCSS(
+      await expect(signInForm.passwordField).toHaveCSS(
         "border-color",
         "rgb(220, 53, 69)",
       );
     });
 
     //Sign in with wrong password
-    test("Sign in with wrong password", async ({ page }) => {
-      await page.locator("#signinEmail").fill("fedorenko084+test1@gmail.com");
-      await page.locator("#signinPassword").fill("123");
-      await page.getByRole("button", { name: "Login" }).click();
-      await expect(page.locator(".alert-danger")).toHaveText(
-        "Wrong email or password",
+    test("Sign in with wrong password", async () => {
+      await signInForm.login(faker.internet.email(), faker.internet.password());
+      await expect(signInForm.wrongDataError).toHaveText(
+        SignInValidationMessages.wrongData,
       );
-      await expect(page.locator(".alert-danger")).toHaveCSS(
+      await expect(signInForm.wrongDataError).toHaveCSS(
         "color",
         "rgb(114, 28, 36)",
       );
@@ -106,7 +106,7 @@ test.describe("Sign in form", () => {
     test("Open Forgot Password form", async ({ page }) => {
       await page.getByRole("button", { name: "Forgot password" }).click();
       await expect(
-        page.getByRole("heading", { name: "Restore access" }),
+        forgotPasswordForm.formTitle
       ).toBeVisible();
     });
   });
