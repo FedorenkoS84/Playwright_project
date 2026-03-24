@@ -1,9 +1,11 @@
 import { test, expect, Locator } from "@playwright/test";
 import { faker } from "@faker-js/faker";
+import GaragePage from "../pom/pages/GaragePage";
 
 test.describe("Garage page - Data Driven", () => {
   let carItem: Locator;
-
+  let garagePage: GaragePage;
+  test.use({ storageState: "./test-data/states/validUser1StorageState.json" });
   const testData = [
     { brand: "Audi", model: "Q7" },
     { brand: "BMW", model: "X5" },
@@ -13,12 +15,9 @@ test.describe("Garage page - Data Driven", () => {
   ];
 
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.locator(".header_signin").click();
-    await page.locator("#signinEmail").fill("fedorenkos084+test1@gmail.com");
-    await page.locator("#signinPassword").fill("12345Test1");
-    await page.getByRole("button", { name: "Login" }).click();
-
+    garagePage = new GaragePage(page);
+    await garagePage.open();
+    await garagePage.removeAllCars();
     carItem = page.locator(".car-item").first();
   });
 
