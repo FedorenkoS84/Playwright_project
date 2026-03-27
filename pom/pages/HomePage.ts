@@ -7,5 +7,8 @@ class HomePage {
     this.page = page;
     this.signInButton = this.page.locator(".header_signin");
   }
+  async open() {
+    await this.page.goto("/");
+  }
 }
 export default HomePage;

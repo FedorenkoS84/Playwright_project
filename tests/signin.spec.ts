@@ -21,8 +21,14 @@ test.describe("Sign in form", () => {
   test.describe("SignIn Process", () => {
     //Successful sign in
     test("Successful sign in", async ({ page }) => {
+      await page
+        .context()
+        .storageState({ path: "./test-data/states/initialStorageState.json" });
       await signInForm.login(VALID_USER1.email, VALID_USER1.password);
       await expect(page.locator("h1")).toHaveText("Garage");
+      await page
+        .context()
+        .storageState({ path: "./test-data/states/finalStorageState.json" });
     });
     //Sign in with empty email
     test("Sign in with empty email", async () => {
@@ -105,9 +111,7 @@ test.describe("Sign in form", () => {
     //Open Forgot Password form
     test("Open Forgot Password form", async ({ page }) => {
       await page.getByRole("button", { name: "Forgot password" }).click();
-      await expect(
-        forgotPasswordForm.formTitle
-      ).toBeVisible();
+      await expect(forgotPasswordForm.formTitle).toBeVisible();
     });
   });
 });
